@@ -79,7 +79,7 @@ install(TARGETS genicam
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 add_subdirectory(baumer)
-add_subdirectory(genicam)
+#add_subdirectory(genicam)
 
 add_subdirectory(rc_genicam_api)
 if (BUILD_TOOLS)
