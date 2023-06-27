@@ -78,7 +78,7 @@ class GenTLWrapper
 
     GenTLWrapper(const std::string &filename);
     ~GenTLWrapper();
-
+    void getGenTLVersion();
     // C interface functions of GenTL
 
     GenTL::PGCGetInfo GCGetInfo;
@@ -160,6 +160,8 @@ class GenTLWrapper
     GenTLWrapper &operator=(const GenTLWrapper &); // forbidden
 
     void *lib;
+    int majorVersion_;
+    int minorVersion_;
 };
 
 }

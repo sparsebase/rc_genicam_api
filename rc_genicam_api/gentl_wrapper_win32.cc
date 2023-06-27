@@ -42,7 +42,7 @@
 #include <iostream>
 
 #include <Windows.h>
-
+#include "exception.h"
 namespace rcg
 {
 
@@ -165,6 +165,10 @@ GenTLWrapper::GenTLWrapper(const std::string &filename)
   *reinterpret_cast<void**>(&TLOpen)=getFunction(lp, "TLOpen");
   *reinterpret_cast<void**>(&TLClose)=getFunction(lp, "TLClose");
   *reinterpret_cast<void**>(&TLGetInfo)=getFunction(lp, "TLGetInfo");
+
+  //check the version of GenTL to decide which more functions to resolve
+  //getGenTLVersion();
+
   *reinterpret_cast<void**>(&TLGetNumInterfaces)=getFunction(lp, "TLGetNumInterfaces");
   *reinterpret_cast<void**>(&TLGetInterfaceID)=getFunction(lp, "TLGetInterfaceID");
   *reinterpret_cast<void**>(&TLGetInterfaceInfo)=getFunction(lp, "TLGetInterfaceInfo");
@@ -196,20 +200,27 @@ GenTLWrapper::GenTLWrapper(const std::string &filename)
   *reinterpret_cast<void**>(&DSRevokeBuffer)=getFunction(lp, "DSRevokeBuffer");
   *reinterpret_cast<void**>(&DSQueueBuffer)=getFunction(lp, "DSQueueBuffer");
   *reinterpret_cast<void**>(&DSGetBufferInfo)=getFunction(lp, "DSGetBufferInfo");
-
+  /* GenTL v1.1 */
   *reinterpret_cast<void**>(&GCGetNumPortURLs)=getFunction(lp, "GCGetNumPortURLs");
   *reinterpret_cast<void**>(&GCGetPortURLInfo)=getFunction(lp, "GCGetPortURLInfo");
   *reinterpret_cast<void**>(&GCReadPortStacked)=getFunction(lp, "GCReadPortStacked");
   *reinterpret_cast<void**>(&GCWritePortStacked)=getFunction(lp, "GCWritePortStacked");
-
+  /* GenTL v1.3 */
   *reinterpret_cast<void**>(&DSGetBufferChunkData)=getFunction(lp, "DSGetBufferChunkData");
+  //assume at least 1.3 is supported, otherwise we will throw exception and not use this producer
 
-  *reinterpret_cast<void**>(&IFGetParentTL)=getFunction(lp, "IFGetParentTL");
-  *reinterpret_cast<void**>(&DevGetParentIF)=getFunction(lp, "DevGetParentIF");
-  *reinterpret_cast<void**>(&DSGetParentDev)=getFunction(lp, "DSGetParentDev");
+  /* GenTL v1.4 */
+  if (majorVersion_ > 1 || majorVersion_ == 1 && minorVersion_ >= 4) {
+	  *reinterpret_cast<void**>(&IFGetParentTL) = getFunction(lp, "IFGetParentTL");
+	  *reinterpret_cast<void**>(&DevGetParentIF) = getFunction(lp, "DevGetParentIF");
+	  *reinterpret_cast<void**>(&DSGetParentDev) = getFunction(lp, "DSGetParentDev");
+  }
 
-  *reinterpret_cast<void**>(&DSGetNumBufferParts)=getFunction(lp, "DSGetNumBufferParts");
-  *reinterpret_cast<void**>(&DSGetBufferPartInfo)=getFunction(lp, "DSGetBufferPartInfo");
+  /* GenTL v1.5 */
+  if(majorVersion_ > 1 || majorVersion_ == 1 && minorVersion_ >= 5) {
+	  *reinterpret_cast<void**>(&DSGetNumBufferParts) = getFunction(lp, "DSGetNumBufferParts");
+      *reinterpret_cast<void**>(&DSGetBufferPartInfo) = getFunction(lp, "DSGetBufferPartInfo");
+  }
 
   lib=static_cast<void *>(lp);
 }
@@ -217,6 +228,35 @@ GenTLWrapper::GenTLWrapper(const std::string &filename)
 GenTLWrapper::~GenTLWrapper()
 {
   FreeLibrary(static_cast<HMODULE>(lib));
+}
+
+void GenTLWrapper::getGenTLVersion()
+{
+	// get the version info of genTL producer, because some function is unavailable in certain version
+	void* tl;
+	uint32_t retval = 0;
+	GenTL::INFO_DATATYPE type;
+	size_t size = sizeof(retval);
+	if (GCInitLib() != GenTL::GC_ERR_SUCCESS)
+		throw GenTLException("GenTLWrapper::getGenTLVersion()", nullptr);
+
+	if (TLOpen(&tl) != GenTL::GC_ERR_SUCCESS)
+		throw GenTLException("GenTLWrapper::getGenTLVersion()", nullptr);
+
+    if (TLGetInfo(tl, GenTL::TL_INFO_GENTL_VER_MAJOR, &type, &retval, &size) != GenTL::GC_ERR_SUCCESS) {
+        majorVersion_ = 0;
+    }
+// 	GenTL::GC_ERROR err;
+// 	char tmp[1024] = "";
+// 	size_t tmp_size = sizeof(tmp);
+// 
+// 	GCGetLastError(&err, tmp, &tmp_size);
+
+    majorVersion_ = static_cast<int>(retval);
+    if (TLGetInfo(tl, GenTL::TL_INFO_GENTL_VER_MINOR, &type, &retval, &size) != GenTL::GC_ERR_SUCCESS)
+        minorVersion_ = 0;
+	minorVersion_ = static_cast<int>(retval);
+	TLClose(tl);
 }
 
 }
