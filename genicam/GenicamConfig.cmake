@@ -1,8 +1,45 @@
-# Config file for Genicam
+#############################################################################
 #
-# It defines the requires genicam libraries as imported targets and defines:
-# - Genicam_TARGETS: list of all imported target with their prefix
-# - Genicam_LIBRARIES: list of libraries
+# Baysen Inc Limited.
+# Copyright (C) 2014 - 2023. All rights reserved.
+#
+# This software is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+# See the file LICENSE.txt at the root directory of this source
+# distribution for additional information about the GNU GPL.
+#
+# For using this code with software that can not be combined with the GNU
+# GPL, please contact Baysen Inc. about acquiring a Professional
+# Edition License.
+#
+# See https://baysen.com/licenses for more information.
+#
+# This software was developed at:
+# Baysen Inc. Limited 
+# Campus Chengdu
+# 5 Gaopeng Ave. Suite B-208
+# Chengdu, China
+#
+#
+# This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+# WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+#
+# Description:
+# CMake configuration file for GenICam
+#
+# GENICAM_FOUND
+# GENICAM_INCLUDE_DIRS
+# GENICAM_LIBRARIES
+# 
+#
+# Authors:
+# Nan Zhang
+# 
+#
+#############################################################################
+
 
 get_filename_component(PACKAGE_PREFIX_DIR "${CMAKE_CURRENT_LIST_DIR}/" ABSOLUTE)
 
@@ -18,7 +55,31 @@ elseif (WIN32)
   endif ()
 endif ()
 
-message(STATUS "Detected architecture ${ARCHITECTURE}")
+message(STATUS "FindGenICam Detected architecture ${ARCHITECTURE}")
+
+# Try to use Basler Pylon implementation of GenICam
+if("$ENV{PYLON_DEV_DIR}" STREQUAL "")
+  message(STATUS "FindGenICam: PYLON_DEV_DIR not set. Install Basler Pylon SDK and set the PYLON_DEV_DIR environment variable")
+  set(GENICAM_FOUND FALSE)
+  return()
+endif()
+
+find_path(GENICAM_INCLUDE_DIR GenICam.h
+    PATHS "$ENV{PYLON_DEV_DIR}/include/")
+
+message(STATUS "GenICam inlude directory: ${GENICAM_INCLUDE_DIR}")
+# Use file read to get the genicam version from _GenICamVersion.h
+file(READ "${GENICAM_INCLUDE_DIR}/_GenICamVersion.h" header)
+string(REGEX MATCH "#define GENICAM_VERSION_MAJOR [0-9]+" majordef "${header}")
+string(REGEX MATCH "[0-9]+" GENICAM_MAJOR_VER "${majordef}")
+string(REGEX MATCH "#define GENICAM_VERSION_MINOR [0-9]+" minordef "${header}")
+string(REGEX MATCH "[0-9]+" GENICAM_MINOR_VER "${minordef}")
+string(REGEX MATCH "#define GENICAM_MAIN_COMPILER [a-zA-Z]+[0-9]+" compilerdef "${header}")
+string(REGEX MATCH "[a-zA-Z]+[0-9]+" GENICAM_COMPILER "${compilerdef}")
+#string(REGEX MATCH "#define GENICAM_COMPANY_SUFFIX [a-zA-Z0-9_]+" companydef "${header}")
+#string(REGEX MATCH "([^\s]+)\s+([^\s]+)\s+(.*)" ${companydef} third_word)
+
+message(STATUS "GenICam suffix: _${GENICAM_COMPILER}_v${GENICAM_MAJOR_VER}_${GENICAM_MINOR_VER}")
 
 set(GENICAM_LIB_SUFFIX)
 
