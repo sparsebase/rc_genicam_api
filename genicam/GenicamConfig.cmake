@@ -75,12 +75,12 @@ string(REGEX MATCH "[0-9]+" GENICAM_MAJOR_VER "${majordef}")
 string(REGEX MATCH "#define GENICAM_VERSION_MINOR [0-9]+" minordef "${header}")
 string(REGEX MATCH "[0-9]+" GENICAM_MINOR_VER "${minordef}")
 string(REGEX MATCH "#define GENICAM_MAIN_COMPILER [a-zA-Z]+[0-9]+" compilerdef "${header}")
-string(REGEX MATCH "[a-zA-Z]+[0-9]+" GENICAM_COMPILER "${compilerdef}")
-#string(REGEX MATCH "#define GENICAM_COMPANY_SUFFIX [a-zA-Z0-9_]+" companydef "${header}")
-#string(REGEX MATCH "([^\s]+)\s+([^\s]+)\s+(.*)" ${companydef} third_word)
+string(REGEX REPLACE "([^ ]+) ([^ ]+) ([^ ]+).*" "\\3" GENICAM_COMPILER "${compilerdef}")
+string(REGEX MATCH "#define GENICAM_COMPANY_SUFFIX [a-zA-Z0-9_]+" companydef "${header}")
+string(REGEX REPLACE "([^ ]+) ([^ ]+) ([^ ]+).*" "\\3" GENICAM_COMPANY_SUFFIX "${companydef}")
 
-message(STATUS "GenICam suffix: _${GENICAM_COMPILER}_v${GENICAM_MAJOR_VER}_${GENICAM_MINOR_VER}")
-
+set(GENICAM_SUFFIX "${GENICAM_COMPILER}_v${GENICAM_MAJOR_VER}_${GENICAM_MINOR_VER}_${GENICAM_COMPANY_SUFFIX}")
+message(STATUS "Genicam suffix: ${GENICAM_SUFFIX}")
 set(GENICAM_LIB_SUFFIX)
 
 if ("${ARCHITECTURE}" STREQUAL "arm")
