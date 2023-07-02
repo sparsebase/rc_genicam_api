@@ -135,6 +135,8 @@ target_compile_options(rc_genicam_api_static
   PUBLIC
     $<$<CXX_COMPILER_ID:MSVC>:/DGENICAM_NO_AUTO_IMPLIB>)
 
+message(STATUS "The project name space is: ${PROJECT_NAMESPACE}")
+
 if (BUILD_SHARED_LIBS)
   add_library(rc_genicam_api SHARED ${src})
   add_library(${PROJECT_NAMESPACE}::rc_genicam_api ALIAS rc_genicam_api)
